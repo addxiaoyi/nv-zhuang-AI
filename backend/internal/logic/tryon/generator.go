@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/frame/g"
 )
 
@@ -48,20 +49,20 @@ func loadModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
 	prefix := "llm.models." + alias
 	cfg := &ModelConfig{
 		Name:           alias,
-		Provider:       g.Cfg().MustGet(ctx, prefix+".provider", "openai").String(),
-		APIKey:         g.Cfg().MustGet(ctx, prefix+".apiKey", "").String(),
-		BaseURL:        g.Cfg().MustGet(ctx, prefix+".baseURL", "").String(),
-		Model:          g.Cfg().MustGet(ctx, prefix+".model", "").String(),
-		EnvKey:         g.Cfg().MustGet(ctx, prefix+".envKey", "").String(),
-		WorkflowPath:   g.Cfg().MustGet(ctx, prefix+".workflowPath", "").String(),
-		PersonNode:     g.Cfg().MustGet(ctx, prefix+".personNode", "").String(),
-		GarmentNode:    g.Cfg().MustGet(ctx, prefix+".garmentNode", "").String(),
-		PromptNode:     g.Cfg().MustGet(ctx, prefix+".promptNode", "").String(),
-		SeedNode:       g.Cfg().MustGet(ctx, prefix+".seedNode", "").String(),
-		Seed:           g.Cfg().MustGet(ctx, prefix+".seed", 246813579).Int64(),
-		OutputNode:     g.Cfg().MustGet(ctx, prefix+".outputNode", "").String(),
-		PollInterval:   time.Duration(g.Cfg().MustGet(ctx, prefix+".pollIntervalMs", 1000).Int()) * time.Millisecond,
-		RequestTimeout: time.Duration(g.Cfg().MustGet(ctx, prefix+".timeoutSeconds", 900).Int()) * time.Second,
+		Provider:       mustGet(ctx, prefix+".provider", "openai").String(),
+		APIKey:         mustGet(ctx, prefix+".apiKey", "").String(),
+		BaseURL:        mustGet(ctx, prefix+".baseURL", "").String(),
+		Model:          mustGet(ctx, prefix+".model", "").String(),
+		EnvKey:         mustGet(ctx, prefix+".envKey", "").String(),
+		WorkflowPath:   mustGet(ctx, prefix+".workflowPath", "").String(),
+		PersonNode:     mustGet(ctx, prefix+".personNode", "").String(),
+		GarmentNode:    mustGet(ctx, prefix+".garmentNode", "").String(),
+		PromptNode:     mustGet(ctx, prefix+".promptNode", "").String(),
+		SeedNode:       mustGet(ctx, prefix+".seedNode", "").String(),
+		Seed:           mustGet(ctx, prefix+".seed", 246813579).Int64(),
+		OutputNode:     mustGet(ctx, prefix+".outputNode", "").String(),
+		PollInterval:   time.Duration(mustGet(ctx, prefix+".pollIntervalMs", 1000).Int()) * time.Millisecond,
+		RequestTimeout: time.Duration(mustGet(ctx, prefix+".timeoutSeconds", 900).Int()) * time.Second,
 	}
 
 	// 环境变量覆盖（优先级最高）
@@ -76,7 +77,7 @@ func loadModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
 		cfg = loadLegacyConfig(ctx, alias)
 	}
 	if cfg == nil {
-		return nil, fmt.Errorf("模型 %s 未配置（当前请求可能来自不支持个人模型配置的旧前端或旧后端）", alias)
+		return nil, fmt.Errorf("模型 %s 未配置（请在 config.yaml 的 llm.models.%s 或对应环境变量中配置 apiKey / model）", alias, alias)
 	}
 
 	provider := strings.ToLower(strings.TrimSpace(cfg.Provider))
@@ -97,16 +98,16 @@ func loadLegacyConfig(ctx context.Context, alias string) *ModelConfig {
 			Name:     alias,
 			Provider: "openai",
 			APIKey:   getKey("OPENAI_API_KEY", "llm.openai.apiKey"),
-			BaseURL:  g.Cfg().MustGet(ctx, "llm.openai.baseURL", "https://api.openai.com/v1").String(),
-			Model:    g.Cfg().MustGet(ctx, "llm.openai.model", "gpt-image-2").String(),
+			BaseURL:  mustGet(ctx, "llm.openai.baseURL", "https://api.openai.com/v1").String(),
+			Model:    mustGet(ctx, "llm.openai.model", "gpt-image-2").String(),
 		}
 	case "gemini", "gemini-3.1-flash-image", "banana", "nano-banana", "gemini-2.5-flash-image":
 		return &ModelConfig{
 			Name:     "gemini",
 			Provider: "gemini",
 			APIKey:   getKey("GEMINI_API_KEY", "llm.gemini.apiKey"),
-			BaseURL:  g.Cfg().MustGet(ctx, "llm.gemini.baseURL", "https://generativelanguage.googleapis.com/v1beta").String(),
-			Model:    g.Cfg().MustGet(ctx, "llm.gemini.model", "gemini-3.1-flash-image").String(),
+			BaseURL:  mustGet(ctx, "llm.gemini.baseURL", "https://generativelanguage.googleapis.com/v1beta").String(),
+			Model:    mustGet(ctx, "llm.gemini.model", "gemini-3.1-flash-image").String(),
 		}
 	}
 	return nil
@@ -247,7 +248,7 @@ func getKey(envName, cfgPath string) string {
 	if v := lookupEnv(envName); v != "" {
 		return v
 	}
-	return g.Cfg().MustGet(context.Background(), cfgPath).String()
+	return mustGet(context.Background(), cfgPath).String()
 }
 
 // lookupEnv 兼容多个环境变量名（大小写不敏感地查找首个非空值）
@@ -261,4 +262,35 @@ func lookupEnv(names ...string) string {
 		}
 	}
 	return ""
+}
+
+// mustGet 读取配置项，读取失败时返回默认值（或 nil）而不是 panic，
+// 让未配置项走「模型未配置」这类显式业务错误，避免裸 500。
+func mustGet(ctx context.Context, pattern string, def ...interface{}) *gvar.Var {
+	v, err := g.Cfg().Get(ctx, pattern)
+	if err != nil {
+		g.Log().Debugf(ctx, "读取配置项 %s 失败: %v", pattern, err)
+		if len(def) > 0 {
+			return gvar.New(def[0])
+		}
+		return gvar.New(nil)
+	}
+	if v == nil && len(def) > 0 {
+		return gvar.New(def[0])
+	}
+	return v
+}
+
+// ResolveServerModelConfig 校验服务端预设模型是否就绪（仅读取配置，不发起任何网络请求）。
+// 控制器在进入生成流程前调用，用于提前返回明确的服务端错误码。
+func ResolveServerModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(alias)), "comfyui") {
+		return resolveComfyUIConfig(ctx, alias)
+	}
+	// loadLegacyConfig 对未知别名返回 (nil, nil)，这里统一转成错误，避免预检放行后落到 500
+	cfg, err := loadModelConfig(ctx, alias)
+	if err == nil && cfg == nil {
+		err = fmt.Errorf("模型 %s 未配置", alias)
+	}
+	return cfg, err
 }

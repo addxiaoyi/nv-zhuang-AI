@@ -128,6 +128,7 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 | size | 输出尺寸 `1024x1024`/`1024x1536`/`1536x1024` | `1024x1536` |
 | lang | 提示词语言 `zh`/`en` | `zh` |
 | client_config | 可选的浏览器个人模型配置；仅在当前请求内存中使用，不持久化、不记录 Key/Base URL | 空（使用服务器预设） |
+| server_side | 服务间调用标记，为 `true` 时强制使用服务端预设模型，同时要求请求头携带 `Authorization: Bearer <token>`；携带 `client_config` 会被拒绝（400 / `CLIENT_CONFIG_NOT_ALLOWED`），详见 [docs/INTEGRATION-STUDIO.md](../docs/INTEGRATION-STUDIO.md) | `false` |
 
 `client_config.provider` 支持 `openai`、`doubao`、`gemini`。个人 Base URL 必须是 HTTP/HTTPS 公网地址，且不能包含账号、查询参数或片段；localhost、内网和保留地址会被拒绝，以降低 SSRF 风险。ComfyUI 不接受 `client_config`，只使用后端本机配置。
 
@@ -140,6 +141,8 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
   "prompt": "实际使用的提示词"
 }
 ```
+
+`server_side` 为 `true` 时响应额外带 `"server_side": true`，表示结果由服务端预设模型生成。面向 Studio 等外部系统的接入方式见 [docs/INTEGRATION-STUDIO.md](../docs/INTEGRATION-STUDIO.md)。
 
 ## 目录结构
 

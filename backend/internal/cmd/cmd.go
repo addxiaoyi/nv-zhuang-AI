@@ -71,6 +71,7 @@ var (
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				group.Middleware(
 					middleware.RequestID,
+					middleware.Recover,
 					ghttp.MiddlewareHandlerResponse,
 					corsMw.Handler,
 					bodyLimitMw.Handler,

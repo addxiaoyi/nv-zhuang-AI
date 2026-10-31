@@ -188,6 +188,156 @@ func TestControllerTryonQuotaAndConcurrency(t *testing.T) {
 	}
 }
 
+func TestControllerTryonServerSideRejectsClientConfig(t *testing.T) {
+	secService := security.GetService()
+	// 赋予足够配额与并发，确保请求能被放行到服务间规则校验阶段
+	secService.DailyQuotaTracker = security.NewDailyQuotaTracker(100)
+	secService.ConcurrencyManager = security.NewConcurrencyManager(4, 4)
+
+	s := g.Server("test-ctrl-server-side")
+	s.Group("/", func(group *ghttp.RouterGroup) {
+		group.Middleware(middleware.RequestID)
+		group.Bind(NewV1())
+	})
+	s.SetPort(0)
+	_ = s.Start()
+	defer s.Shutdown()
+
+	port := strings.Split(s.GetListenedAddress(), ":")[1]
+	client := &http.Client{}
+
+	// 1. server_side 与 client_config 同时出现，必须拒绝且不外发个人 Key
+	conflictReq := v1.TryonReq{
+		PersonImage:  createTestPNG(300, 300),
+		GarmentImage: createTestPNG(300, 300),
+		ServerSide:   true,
+		ClientConfig: &v1.ClientModelConfig{
+			Provider: "gemini",
+			BaseURL:  "https://example.invalid",
+			APIKey:   "test-placeholder-key-not-real",
+			Model:    "gemini-3.1-flash-image",
+		},
+	}
+	conflictBody, _ := json.Marshal(conflictReq)
+	req1, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:"+port+"/tryon", bytes.NewReader(conflictBody))
+	req1.Header.Set("Content-Type", "application/json")
+	resp1, err := client.Do(req1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp1.Body.Close()
+	if resp1.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp1.StatusCode)
+	}
+	b1, _ := io.ReadAll(resp1.Body)
+	var res1 struct {
+		Code int `json:"code"`
+		Data struct {
+			ErrorCode string `json:"error_code"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(b1, &res1)
+	if res1.Code != 40001 || res1.Data.ErrorCode != "CLIENT_CONFIG_NOT_ALLOWED" {
+		t.Fatalf("unexpected conflict res: %+v", res1)
+	}
+
+	// 2. server_side 无服务端预设 Token 时明确拒绝，不允许无鉴权占用模型额度
+	noTokenReq := v1.TryonReq{
+		PersonImage:  createTestPNG(300, 300),
+		GarmentImage: createTestPNG(300, 300),
+		ServerSide:   true,
+	}
+	noTokenBody, _ := json.Marshal(noTokenReq)
+	req2, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:"+port+"/tryon", bytes.NewReader(noTokenBody))
+	req2.Header.Set("Content-Type", "application/json")
+	resp2, err := client.Do(req2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", resp2.StatusCode)
+	}
+	b2, _ := io.ReadAll(resp2.Body)
+	var res2 struct {
+		Code int `json:"code"`
+		Data struct {
+			ErrorCode string `json:"error_code"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(b2, &res2)
+	if res2.Code != 50301 || res2.Data.ErrorCode != "SERVICE_CALL_NOT_CONFIGURED" {
+		t.Fatalf("unexpected no-token res: %+v", res2)
+	}
+}
+
+// 服务端 Token 已就绪、但所选模型没有任何服务端配置时，必须返回明确的 50302，
+// 而不是让请求落进适配层变成不透明的 500；错误信息也不得回显任何服务端 Token。
+func TestControllerTryonServerSideModelNotConfigured(t *testing.T) {
+	const token = "test-server-side-token-0123456789abcdef"
+	t.Setenv("MODEL_NOT_READY_KEY", token)
+
+	secService := security.GetService()
+	store, err := security.NewTokenStore(true, "MODEL_NOT_READY_KEY")
+	if err != nil {
+		t.Fatalf("构建 TokenStore 失败: %v", err)
+	}
+	originalStore := secService.TokenStore
+	secService.TokenStore = store
+	t.Cleanup(func() { secService.TokenStore = originalStore })
+	// 赋予足够配额与并发，确保请求能被放行到服务间规则校验阶段
+	originalQuota, originalConc := secService.DailyQuotaTracker, secService.ConcurrencyManager
+	secService.DailyQuotaTracker = security.NewDailyQuotaTracker(100)
+	secService.ConcurrencyManager = security.NewConcurrencyManager(4, 4)
+	t.Cleanup(func() {
+		secService.DailyQuotaTracker = originalQuota
+		secService.ConcurrencyManager = originalConc
+	})
+
+	s := g.Server("test-ctrl-model-not-configured")
+	s.Group("/", func(group *ghttp.RouterGroup) {
+		group.Middleware(middleware.RequestID, middleware.NewAuthMiddleware(store).Handler)
+		group.Bind(NewV1())
+	})
+	s.SetPort(0)
+	_ = s.Start()
+	defer s.Shutdown()
+
+	port := strings.Split(s.GetListenedAddress(), ":")[1]
+	req := v1.TryonReq{
+		PersonImage:  createTestPNG(300, 300),
+		GarmentImage: createTestPNG(300, 300),
+		ServerSide:   true,
+		Model:        "model-that-has-no-config",
+	}
+	body, _ := json.Marshal(req)
+	httpReq, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:"+port+"/tryon", bytes.NewReader(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+token)
+	resp, err := (&http.Client{}).Do(httpReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", resp.StatusCode)
+	}
+	raw, _ := io.ReadAll(resp.Body)
+	var res struct {
+		Code int `json:"code"`
+		Data struct {
+			ErrorCode string `json:"error_code"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(raw, &res)
+	if res.Code != 50302 || res.Data.ErrorCode != "MODEL_NOT_CONFIGURED" {
+		t.Fatalf("unexpected res: %+v", res)
+	}
+	if bytes.Contains(raw, []byte(token)) {
+		t.Fatalf("响应体泄露了服务端 Token")
+	}
+}
+
 func init() {
 	// 确保测试环境未设置任何破坏性环境变量
 	os.Unsetenv("TRYON_API_KEYS")

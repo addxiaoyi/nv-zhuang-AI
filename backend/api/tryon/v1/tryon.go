@@ -19,6 +19,9 @@ type TryonReq struct {
 	Lang string `json:"lang" d:"zh" dc:"提示词语言"`
 	// 浏览器端自定义模型配置。仅用于当前请求，后端不得持久化或记录其中的 Key/Base URL。
 	ClientConfig *ClientModelConfig `json:"client_config,omitempty" dc:"当前请求临时使用的用户模型配置"`
+	// 服务间调用标记：为 true 时强制使用服务端预设模型，忽略 model 别名与 client_config，
+	// 且必须在请求头携带有效的后端访问 Token（Authorization: Bearer <token>）。
+	ServerSide bool `json:"server_side,omitempty" dc:"服务间调用：强制使用服务端预设模型，需携带后端访问 Token"`
 }
 
 // ClientModelConfig 用户在浏览器设置中心保存的模型配置。
@@ -38,6 +41,8 @@ type TryonRes struct {
 	Model string `json:"model" dc:"实际使用的模型"`
 	// 提示词（调试用，可空）
 	Prompt string `json:"prompt,omitempty" dc:"实际使用的提示词"`
+	// 服务间调用时为 true，表示结果由服务端预设模型生成
+	ServerSide bool `json:"server_side,omitempty" dc:"是否由服务端预设模型生成"`
 }
 
 type ComfyUIHealthReq struct {

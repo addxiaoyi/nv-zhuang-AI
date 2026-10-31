@@ -38,4 +38,9 @@ var (
 	ErrImageFileTooLarge       = NewAPIError(422, 42203, "IMAGE_FILE_TOO_LARGE", "图片文件过大，请压缩后重试")
 	ErrImageDimensionsInvalid  = NewAPIError(422, 42204, "IMAGE_DIMENSIONS_INVALID", "图片尺寸不符合要求")
 	ErrImagePixelLimitExceeded = NewAPIError(422, 42205, "IMAGE_PIXEL_LIMIT_EXCEEDED", "图片像素过高，请缩小后重试")
+
+	ErrClientConfigNotAllowed   = NewAPIError(400, 40001, "CLIENT_CONFIG_NOT_ALLOWED", "服务间调用模式不允许携带个人模型配置")
+	ErrServiceCallNotConfigured = NewAPIError(503, 50301, "SERVICE_CALL_NOT_CONFIGURED", "服务未配置服务端模型，暂不支持服务间调用")
+	ErrModelNotConfigured       = NewAPIError(503, 50302, "MODEL_NOT_CONFIGURED", "所选模型尚未配置服务端密钥或地址")
+	ErrServiceInternal          = NewAPIError(500, 50001, "SERVICE_INTERNAL_ERROR", "服务端内部错误，请稍后重试")
 )

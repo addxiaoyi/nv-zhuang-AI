@@ -7,6 +7,7 @@ package tryon
 import (
 	"context"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 
 	"backend/api/tryon/v1"
@@ -55,6 +56,45 @@ func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.Try
 		return nil, nil
 	}
 	defer release()
+
+	// 服务间调用：显式声明时强制走服务端预设模型，忽略请求体中的 client_config，
+	// 避免个人 Key 经由服务端转发链路外发或被记录。
+	if req.ServerSide {
+		if req.ClientConfig != nil {
+			middleware.WriteAPIError(r, security.ErrClientConfigNotAllowed)
+			return nil, nil
+		}
+		if !secService.TokenStore.HasTokens() {
+			middleware.WriteAPIError(r, security.ErrServiceCallNotConfigured)
+			return nil, nil
+		}
+
+		// 所选模型自身未配置密钥/地址时提前拦截，避免落到适配层变成不透明的 500
+		if _, cfgErr := tryon.ResolveServerModelConfig(ctx, req.Model); cfgErr != nil {
+			g.Log().Infof(ctx, "服务间调用模型未就绪: model=%s err=%v", req.Model, cfgErr)
+			middleware.WriteAPIError(r, security.ErrModelNotConfigured)
+			return nil, nil
+		}
+
+		imageB64, model, prompt, err := tryon.DoTryonWithValidatedImages(
+			ctx,
+			personImg,
+			garmentImg,
+			req.Model,
+			req.Size,
+			req.Lang,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		return &v1.TryonRes{
+			Image:      imageB64,
+			Model:      model,
+			Prompt:     prompt,
+			ServerSide: true,
+		}, nil
+	}
 
 	var clientConfig *tryon.ModelConfig
 	if req.ClientConfig != nil {
