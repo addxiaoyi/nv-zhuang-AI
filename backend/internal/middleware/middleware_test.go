@@ -100,6 +100,73 @@ func TestCORSOriginValidation(t *testing.T) {
 	}
 }
 
+// Studio（https://studio.0st.top）是默认白名单来源，任何配置调整都不能把它弄丢
+func TestCORSMiddlewareAllowsStudioOrigin(t *testing.T) {
+	cfg := &security.SecurityConfig{
+		TrustedOrigins: []string{"https://studio.0st.top"},
+	}
+	cors := NewCORSMiddleware(cfg)
+
+	s := g.Server("test-cors-studio")
+	s.Group("/", func(group *ghttp.RouterGroup) {
+		group.Middleware(cors.Handler)
+		group.ALL("/test", func(r *ghttp.Request) {
+			r.Response.Write("ok")
+		})
+	})
+	s.SetPort(0)
+	_ = s.Start()
+	defer s.Shutdown()
+
+	base := "http://127.0.0.1:" + strings.Split(s.GetListenedAddress(), ":")[1] + "/test"
+	client := &http.Client{}
+
+	req, _ := http.NewRequest(http.MethodGet, base, nil)
+	req.Header.Set("Origin", "https://studio.0st.top")
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "https://studio.0st.top" {
+		t.Fatalf("unexpected allow origin: %s", got)
+	}
+	// 跨域预检必须放行 Authorization，否则 Studio 服务端无法带 Token 调用
+	pre, _ := http.NewRequest(http.MethodOptions, base, nil)
+	pre.Header.Set("Origin", "https://studio.0st.top")
+	pre.Header.Set("Access-Control-Request-Method", "POST")
+	pre.Header.Set("Access-Control-Request-Headers", "authorization, content-type")
+	preResp, err := client.Do(pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer preResp.Body.Close()
+	if preResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 preflight, got %d", preResp.StatusCode)
+	}
+	allowed := strings.ToLower(preResp.Header.Get("Access-Control-Allow-Headers"))
+	if !strings.Contains(allowed, "authorization") {
+		t.Fatalf("preflight must allow Authorization, got %q", allowed)
+	}
+
+	// 尾随斜杠、协议或端口不一致的仿冒来源不得放行
+	for _, evil := range []string{"https://studio.0st.top.evil.com", "http://studio.0st.top", "https://studio.0st.top:8080"} {
+		bad, _ := http.NewRequest(http.MethodGet, base, nil)
+		bad.Header.Set("Origin", evil)
+		badResp, err := client.Do(bad)
+		if err != nil {
+			t.Fatal(err)
+		}
+		badResp.Body.Close()
+		if badResp.StatusCode != http.StatusForbidden {
+			t.Fatalf("origin %q must be rejected, got %d", evil, badResp.StatusCode)
+		}
+	}
+}
+
 func TestAuthMiddleware(t *testing.T) {
 	validToken := "valid-token-at-least-32-characters-long-123456"
 	envKey := "TEST_MIDDLEWARE_KEYS"

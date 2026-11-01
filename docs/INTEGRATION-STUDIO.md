@@ -44,7 +44,39 @@ Studio (Fastify)  ──HTTPS──►  nvzhuang 后端 (/tryon)  ──►  大
 
 > 说明：`server_side` 保证的是「**只会使用服务端预设的模型，永远不会转发你的个人 Key**」；
 > 真正的身份隔离来自 `security.authRequired: true` + 为 Studio 单独签发一个 Token。
-> 生产环境请在 `security.trustedOrigins` 中把 Studio 的域名加入白名单（见 `config.example.yaml` 第 197 行附近的 `trustedOrigins`）。
+> 每个 Token 的 SHA-256 前 16 位即独立的额度键，默认与其它 Token 互不共享。
+> 生产环境请在 `security.trustedOrigins` 中把 Studio 的域名加入白名单。本仓库已在
+> `backend/manifest/config/config.example.yaml` 与 `DefaultSecurityConfig()` 的默认值中加入 `https://studio.0st.top`；
+> 若 Studio 后续更换域名，两处都要同步修改（白名单为精确匹配，端口与协议必须一致）。
+
+### 2.1.1 额度命名空间（可选）
+
+默认情况下**每个 Token 各自独立计数**，互不挤占：`principal_id` 是该 Token 的 SHA-256 前 16 位，
+每 Token 每天独立享有 `dailyRequestsPerPrincipal` 次额度。这对 Studio 已经够用——给它单独签发
+一个 Token 即可，不需要任何额外配置。
+
+只有当**同一合作方需要轮换 Token，且希望额度池在换 Token 时不清零**时，才需要开启命名空间：
+
+```yaml
+security:
+  authRequired: true
+  namespaces:
+    - name: "studio"                    # 命名空间名 = 额度键
+      tokenHash: "0123456789abcdef"    # Studio 旧 Token 的 SHA-256 前 16 位
+    - name: "studio"
+      tokenHash: "fedcba9876543210"    # Studio 新 Token，与旧 Token 共用同一份额度
+```
+
+`tokenHash` 的算法是 `sha256(token)` 取前 16 位十六进制，与服务端日志中打印的 `principal_id` 完全一致：
+在日志里搜到 Studio 请求的 `principal_id`，把它填进 `tokenHash` 即可，**不需要在配置里写明文 Token**。
+
+需要注意的边界：
+
+- 命名空间是**共享**预算，不是叠加预算。两个 Token 指同一个 `name`，它们合起来仍只有一份每日额度，
+  不会变成两倍。
+- 只认 `tokenHash` 精确匹配。`Origin` 请求头由客户端单方声明、可随意伪造，**不参与身份归并**，
+  否则任何人加一个 `Origin: https://studio.0st.top` 就能蹭走 Studio 的额度。
+- 未配置命名空间的 Token 行为完全不变，仍是各自独立计数。
 
 ### 2.2 建议的部署形态
 
@@ -55,7 +87,7 @@ Studio:  在服务端配置 TRYON_BASE_URL + TRYON_API_TOKEN，仅供后端进�
 
 - **不要**把 Token 放到 Studio 的 `NEXT_PUBLIC_*` 变量里，也不要让浏览器直连本服务。
 - 本服务的 CORS 白名单用于拦截浏览器跨域；服务间调用由 `Authorization` 头鉴权，二者独立生效。
-- 若只为 Studio 服务，可把 `trustedOrigins` 收紧到 Studio 自己的域名。
+- 若只为 Studio 服务，可把 `trustedOrigins` 收紧到 Studio 自己的域名（即 `https://studio.0st.top`）。
 
 ---
 
