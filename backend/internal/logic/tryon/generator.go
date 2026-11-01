@@ -43,6 +43,21 @@ type ModelConfig struct {
 	ClientProvided bool
 }
 
+// ModelNotConfiguredError 表示服务端预设模型缺少必要配置。
+// 单独定类型，便于控制器把它映射成结构化错误码，而不是与生成失败混为一谈。
+// 文案刻意不含内部配置路径：该错误可能被回给客户端。
+type ModelNotConfiguredError struct {
+	Alias string
+}
+
+func (e *ModelNotConfiguredError) Error() string {
+	return fmt.Sprintf("模型 %s 未配置", e.Alias)
+}
+
+func newModelNotConfigured(alias string) error {
+	return &ModelNotConfiguredError{Alias: alias}
+}
+
 // loadModelConfig 从配置文件加载指定模型的配置，并允许环境变量覆盖
 func loadModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
 	// 按列表读取：llm.models.[alias]
@@ -77,15 +92,15 @@ func loadModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
 		cfg = loadLegacyConfig(ctx, alias)
 	}
 	if cfg == nil {
-		return nil, fmt.Errorf("模型 %s 未配置（请在 config.yaml 的 llm.models.%s 或对应环境变量中配置 apiKey / model）", alias, alias)
+		return nil, newModelNotConfigured(alias)
 	}
 
 	provider := strings.ToLower(strings.TrimSpace(cfg.Provider))
 	if provider != "comfyui" && cfg.APIKey == "" {
-		return nil, fmt.Errorf("模型 %s 未配置 API Key（请在 config.yaml 的 llm.models.%s.apiKey 或环境变量中配置）", alias, alias)
+		return nil, newModelNotConfigured(alias)
 	}
 	if cfg.Model == "" {
-		return nil, fmt.Errorf("模型 %s 未配置 model 名（llm.models.%s.model）", alias, alias)
+		return nil, newModelNotConfigured(alias)
 	}
 	return cfg, nil
 }

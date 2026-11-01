@@ -338,6 +338,66 @@ func TestControllerTryonServerSideModelNotConfigured(t *testing.T) {
 	}
 }
 
+// 浏览器兼容路径（非 server_side）同样要返回结构化 50302，
+// 不能落到 HTTP 200 + 通用 code:50，更不能回显服务端配置路径。
+func TestControllerTryonBrowserPathModelNotConfigured(t *testing.T) {
+	secService := security.GetService()
+	originalQuota, originalConc := secService.DailyQuotaTracker, secService.ConcurrencyManager
+	secService.DailyQuotaTracker = security.NewDailyQuotaTracker(100)
+	secService.ConcurrencyManager = security.NewConcurrencyManager(4, 4)
+	t.Cleanup(func() {
+		secService.DailyQuotaTracker = originalQuota
+		secService.ConcurrencyManager = originalConc
+	})
+
+	s := g.Server("test-ctrl-browser-model-missing")
+	s.Group("/", func(group *ghttp.RouterGroup) {
+		group.Middleware(middleware.RequestID)
+		group.Bind(NewV1())
+	})
+	s.SetPort(0)
+	_ = s.Start()
+	defer s.Shutdown()
+
+	port := strings.Split(s.GetListenedAddress(), ":")[1]
+	req := v1.TryonReq{
+		PersonImage:  createTestPNG(300, 300),
+		GarmentImage: createTestPNG(300, 300),
+		Model:        "model-that-has-no-config",
+	}
+	body, _ := json.Marshal(req)
+	httpReq, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:"+port+"/tryon", bytes.NewReader(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+	resp, err := (&http.Client{}).Do(httpReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d: %s", resp.StatusCode, raw)
+	}
+	var res struct {
+		Code int `json:"code"`
+		Data struct {
+			ErrorCode string `json:"error_code"`
+			RequestID string `json:"request_id"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(raw, &res)
+	if res.Code != 50302 || res.Data.ErrorCode != "MODEL_NOT_CONFIGURED" {
+		t.Fatalf("unexpected res: %+v", res)
+	}
+	if res.Data.RequestID == "" {
+		t.Fatal("expected request_id in error response")
+	}
+	// 不得回显内部配置路径
+	if strings.Contains(string(raw), "llm.models.") {
+		t.Fatalf("响应体泄露了内部配置路径: %s", raw)
+	}
+}
+
 func init() {
 	// 确保测试环境未设置任何破坏性环境变量
 	os.Unsetenv("TRYON_API_KEYS")

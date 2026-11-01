@@ -6,6 +6,7 @@ package tryon
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -117,6 +118,14 @@ func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.Try
 		clientConfig,
 	)
 	if err != nil {
+		// 服务端未配置该模型属于部署配置缺失，与生成失败区分开，
+		// 统一返回结构化错误码，避免落到 200 + 通用 code 或裸 500。
+		var notConfigured *tryon.ModelNotConfiguredError
+		if errors.As(err, &notConfigured) {
+			g.Log().Infof(ctx, "模型未配置: model=%s", notConfigured.Alias)
+			middleware.WriteAPIError(r, security.ErrModelNotConfigured)
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &v1.TryonRes{
