@@ -7,8 +7,6 @@
 > 不仅收录了 1407 套纯净高质量服装图，还顺手接了 AI 虚拟换装后端——这下各位佬友哪怕现实中没有小裙子，直接传张自拍照就能一键无痛变身“女装大佬”出道了 😂！
 
 > 🔗 **在线预览**：https://paipiange.github.io/nvzhuang/  
-> ⭐ **GitHub 源码**：https://github.com/paipiange/nvzhuang
-> 💡 **原作者推文 / 灵感来源**：X [@giaaibusi](https://x.com/giaaibusi)  
 > 🐧 **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/)
 
 ## ⏱️ 10 秒了解本项目
@@ -240,9 +238,8 @@ nvzhuang/
 ?lang=en&q=white  # 组合使用
 ```
 
-## 💡 灵感来源与社区友链
+## 💡 社区友链
 
-- **原作者 / 灵感来源**：[X @giaaibusi](https://x.com/giaaibusi) —— 诚挚鸣谢原作者对高质量 AI 服装图集的整理与创意分享！
 - **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/) —— 真诚、友善、团结、专业的开源与技术极客社区。
 - **审计与规范文档**：
   - [项目现状与开源合规审计报告 (LINUXDO_RELEASE_AUDIT.md)](docs/LINUXDO_RELEASE_AUDIT.md)
