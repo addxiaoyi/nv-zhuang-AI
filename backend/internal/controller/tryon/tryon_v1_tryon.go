@@ -40,10 +40,10 @@ func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.Try
 	}
 
 	// 2. 检查并原子扣减每日调用额度
-	principalID := r.GetCtxVar(middleware.CtxPrincipalID).String()
-	if principalID == "" {
-		principalID = "anonymous"
-	}
+	// principalID 默认是 Token 哈希；若该 Token 配置了额度命名空间，则改用命名空间名，
+	// 使同一合作方轮换 Token 时额度池保持连续。
+	principal := security.ResolvePrincipal(r.GetCtxVar(middleware.CtxPrincipalID).String(), secService.NamespaceIndex)
+	principalID := principal.ID
 	if !secService.DailyQuotaTracker.CheckAndDeduct(principalID) {
 		middleware.WriteAPIError(r, security.ErrDailyQuotaExceeded)
 		return nil, nil

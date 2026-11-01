@@ -196,6 +196,7 @@ security:
   apiKeysEnv: "TRYON_API_KEYS"      # 读取有效后端 Token 的环境变量名（多 Token 以英文逗号分隔，每个 32~512 字符）
   trustedOrigins:                   # CORS 严格白名单（精确匹配，禁止 *）
     - "https://paipiange.github.io"
+    - "https://studio.0st.top"      # Studio 前端，服务间调用方
     - "http://localhost:3000"
     - "http://127.0.0.1:3000"
   allowPrivateNetwork: false        # 是否允许来自私有网络的 PNA 预检
@@ -207,6 +208,16 @@ security:
   concurrency:
     global: 2                       # 全局最大生图并发数
     perPrincipal: 1                 # 单调用方最大生图并发数
+  # 额度命名空间（可选）：把多个 Token 归并到同一额度池
+  # 不配置时，每个 Token 各自独立计数（principal_id = Token 的 SHA-256 前 16 位）。
+  # 配置后，命中 tokenHash 的 Token 共用 以 name 为键 的每日额度与并发预算。
+  # 注意：命中的 Token 不再享有全局 dailyRequestsPerPrincipal / perPrincipal 的独立份额，
+  #       而是整个命名空间共享一份，因此请先确认总预算再启用。
+  # namespaces:
+  #   - name: "studio"                  # 命名空间名，作为额度键（建议用调用方英文标识）
+  #     tokenHash: "0123456789abcdef"   # Token 的 SHA-256 前 16 位十六进制（小写，精确匹配）
+  #   - name: "studio"                  # 同一命名空间可写多条，用于 Token 轮换时额度连续
+  #     tokenHash: "fedcba9876543210"
 
 # 请求体与图片安全限制
 upload:

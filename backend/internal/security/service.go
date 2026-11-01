@@ -13,6 +13,8 @@ type Service struct {
 	RateLimiter        *RateLimiter
 	DailyQuotaTracker  *DailyQuotaTracker
 	ConcurrencyManager *ConcurrencyManager
+	// NamespaceIndex 把 Token 哈希映射到额度命名空间名，见 security.namespaces 配置。
+	NamespaceIndex map[string]string
 }
 
 var defaultService *Service
@@ -38,6 +40,7 @@ func InitService(ctx context.Context) (*Service, error) {
 		RateLimiter:        NewRateLimiter(cfg.RateLimit.RequestsPerMinute, cfg.RateLimit.Burst, cfg.RateLimit.LimiterIdleMinutes),
 		DailyQuotaTracker:  NewDailyQuotaTracker(cfg.RateLimit.DailyRequestsPerPrincipal),
 		ConcurrencyManager: NewConcurrencyManager(cfg.Concurrency.Global, cfg.Concurrency.PerPrincipal),
+		NamespaceIndex:     BuildNamespaceIndex(cfg.Namespaces),
 	}
 	defaultService = s
 	return s, nil
@@ -53,6 +56,7 @@ func GetService() *Service {
 			RateLimiter:        NewRateLimiter(cfg.RateLimit.RequestsPerMinute, cfg.RateLimit.Burst, cfg.RateLimit.LimiterIdleMinutes),
 			DailyQuotaTracker:  NewDailyQuotaTracker(cfg.RateLimit.DailyRequestsPerPrincipal),
 			ConcurrencyManager: NewConcurrencyManager(cfg.Concurrency.Global, cfg.Concurrency.PerPrincipal),
+			NamespaceIndex:     BuildNamespaceIndex(cfg.Namespaces),
 		}
 	}
 	return defaultService
