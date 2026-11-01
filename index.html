@@ -52,27 +52,7 @@ button,select,input{font:inherit;color:inherit}
 .theme-toggle:hover{border-color:var(--ac);color:var(--tx)}
 .theme-toggle:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .theme-toggle svg{width:18px;height:18px}
-/* 信息标签 */
-.infotabs{position:relative;display:flex;gap:6px;padding:4px;border:1px solid var(--control-border);border-radius:12px;background:var(--control-bg)}
-.itab{min-height:52px;padding:0 20px;border:0;border-radius:10px;background:transparent;color:var(--control-text);font-size:16px;font-weight:700;letter-spacing:.03em;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
-.itab:hover{background:var(--recessed-bg);color:var(--tx)}
-.itab[aria-expanded="true"]{background:var(--selected-bg);color:var(--selected-text)}
-.itab:focus-visible,.ipclose:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.ipanel{position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(460px,calc(100vw - 32px));max-height:min(70vh,560px);overflow:auto;
-  border:1px solid var(--line2);background:var(--panel);border-radius:var(--r);box-shadow:var(--sh);padding:16px 20px 18px}
-.ipanel[hidden]{display:none}
-.ipanel:focus{outline:none}
-.ipanel-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.ipanel h2{margin:0;font-size:17px;letter-spacing:.04em;color:var(--tx)}
-.ipclose{width:48px;height:48px;flex:0 0 48px;font-size:20px!important;border-radius:50%;border:1px solid var(--line2);background:var(--bg2);color:var(--tx);font-size:16px;line-height:1;cursor:pointer}
-.ipanel ul{margin:0;padding-left:1.3em;color:#cfd4dc;font-size:15px;line-height:1.85}
-.ipanel li+li{margin-top:2px}
-@media (max-width:560px){
-  .hero-top{flex-direction:column-reverse;align-items:stretch;gap:12px}
-  .hero-controls{justify-content:flex-end}
-  .itab{min-height:52px;padding:0 18px;font-size:16px}
-  .ipanel{position:fixed;left:16px;right:16px;top:auto;width:auto;margin-top:8px}
-}
+
 /* 工具栏 */
 .tools{position:sticky;top:0;z-index:20;background:var(--tools-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .tools-in{max-width:1600px;margin:0 auto;padding:10px clamp(16px,4vw,48px)}
@@ -159,9 +139,6 @@ footer a:hover{color:var(--tx);text-decoration:underline}
 .fitting-toggle{display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border:1px solid var(--control-border);border-radius:12px;background:var(--control-bg);color:var(--control-text);font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
 .fitting-toggle:hover{border-color:var(--ac);color:var(--tx)}
 .fitting-toggle svg{opacity:.8}
-.github-link{display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border:1px solid var(--control-border);border-radius:12px;background:var(--control-bg);color:var(--control-text);font-size:16px;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap;transition:.15s}
-.github-link:hover{border-color:var(--ac);color:var(--tx)}
-.github-link svg{opacity:.85}
 .fitting{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column}
 .fitting.open{display:flex}
 .fit-top{display:flex;align-items:center;gap:12px;padding:12px clamp(16px,3vw,32px);border-bottom:1px solid var(--line);flex-wrap:wrap;flex:0 0 auto}
@@ -394,14 +371,6 @@ footer a:hover{color:var(--tx);text-decoration:underline}
   <div class="hero-top">
     <div class="eyebrow" data-i18n="eyebrow">COSTUME-DB-01 · 图像参照用服装集</div>
     <div class="hero-controls">
-      <a class="github-link" href="https://x.com/giaaibusi" target="_blank" rel="noopener noreferrer" aria-label="原作者/灵感来源 @giaaibusi">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        <span data-i18n="inspiration">灵感来源</span>
-      </a>
-      <a class="github-link" href="https://github.com/paipiange/nvzhuang" target="_blank" rel="noopener noreferrer" aria-label="源代码">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.04.77 2.1v3.11c0 .3.21.66.8.55A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
-        <span data-i18n="sourceCode">源代码</span>
-      </a>
       <button type="button" class="fitting-toggle" id="fittingToggle" aria-haspopup="dialog">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
         <span data-i18n="fittingTab">AI 试穿搭配</span>
@@ -414,32 +383,6 @@ footer a:hover{color:var(--tx);text-decoration:underline}
         <button type="button" data-lang="zh" aria-pressed="true">中文</button>
         <button type="button" data-lang="en" aria-pressed="false">English</button>
       </div>
-      <nav class="infotabs" id="infotabs" aria-label="使用提示・注意事项">
-        <button type="button" class="itab" id="itab0" aria-haspopup="dialog" aria-expanded="false" aria-controls="ipanel0" data-i18n="tipsTab">使用提示</button>
-        <button type="button" class="itab" id="itab1" aria-haspopup="dialog" aria-expanded="false" aria-controls="ipanel1" data-i18n="noticeTab">注意事项</button>
-        <div class="ipanel" id="ipanel0" role="dialog" aria-labelledby="ipt0" tabindex="-1" hidden>
-          <div class="ipanel-hd"><h2 id="ipt0" data-i18n="tipsTitle">使用提示</h2><button type="button" class="ipclose" aria-label="关闭">×</button></div>
-          <ul>
-            <li data-i18n="tips1">作为参照图像，加载到各类 AI 工具的服装参照・图像参照功能中。</li>
-            <li data-i18n="tips2">点击分类按钮可筛选，在搜索框中可按 ID 或服装关键词（例：denim、lace、白）查找。</li>
-            <li data-i18n="tips3">下载原尺寸 PNG 使用，可查看细节。</li>
-            <li data-i18n="tips4">这是没有人物的纯服装图像。脸部、体型、背景请用其他参照图像或指令补充。</li>
-          </ul>
-        </div>
-        <div class="ipanel" id="ipanel1" role="dialog" aria-labelledby="ipt1" tabindex="-1" hidden>
-          <div class="ipanel-hd"><h2 id="ipt1" data-i18n="noticeTitle">注意事项</h2><button type="button" class="ipclose" aria-label="关闭">×</button></div>
-          <ul>
-            <li data-i18n="notice1">基于 MIT 开源协议，完全免费开源，允许商业使用、修改与作品创作。</li>
-            <li data-i18n="notice2">代码与素材全量开放，可自由用于设计参考、AI 试衣或商业项目。</li>
-            <li data-i18n="notice3">无需署名（可自愿）。图像元数据已删除。请无保使用。</li>
-            <li data-i18n="notice4">这是 AI 生成的虚构服装，并非真实商品照片。</li>
-            <li data-i18n="notice5">本页所有服装图像均由文字生成图像（t2i）方式制作，未使用任何真实商品图片。</li>
-            <li data-i18n="notice6">发布前已与现有品牌做相似性检查，但不保证不侵犯第三方权利。</li>
-            <li data-i18n="notice7">使用时请自行负责确认与判断。因使用本数据产生的问题，本站概不负责。</li>
-            <li data-i18n="notice8">请勿用于表现真实人物或未成年人的用途，以及违背公序良俗的用途。</li>
-          </ul>
-        </div>
-      </nav>
     </div>
   </div>
   <h1><span data-i18n="titleWord">拍片哥女装</span> <span data-i18n="titleDb">图库</span></h1>
@@ -460,11 +403,7 @@ footer a:hover{color:var(--tx);text-decoration:underline}
 <footer id="foot">
   <div data-i18n="footerNote">拍片哥女装 COSTUME-DB-01 · 基于 MIT 协议开源 · 完全可商用与作品创作</div>
   <div class="foot-source">
-    <span data-i18n="footerCredit">灵感来源与原作者 X 推文：</span><a href="https://x.com/giaaibusi" target="_blank" rel="noopener noreferrer">@giaaibusi</a>
-    <span class="sep"> · </span>
     <span data-i18n="footerCommunity">社区友链：</span><a href="https://linux.do/" target="_blank" rel="noopener noreferrer">LINUX DO</a>
-    <span class="sep"> · </span>
-    <a href="https://github.com/paipiange/nvzhuang" target="_blank" rel="noopener noreferrer">⭐ GitHub 源码</a>
   </div>
 </footer>
 
@@ -754,20 +693,6 @@ const I18N = {
     titleWord: '拍片哥女装',
     titleDb: '图库',
     subtitle: '人物不入镜的纯服装图像（2:3）。可按春・夏・秋・冬・内衣・派对・泳装・性感分类浏览。',
-    tipsTab: '使用提示', noticeTab: '注意事项',
-    tipsTitle: '使用提示', noticeTitle: '注意事项',
-    tips1: '作为参照图像，加载到各类 AI 工具的服装参照・图像参照功能中。',
-    tips2: '点击分类按钮可筛选，在搜索框中可按 ID 或服装关键词（例：denim、lace、白）查找。',
-    tips3: '下载原尺寸 PNG 使用，可查看细节。',
-    tips4: '这是没有人物的纯服装图像。脸部、体型、背景请用其他参照图像或指令补充。',
-    notice1: '基于 MIT 开源协议，完全免费开源，允许商业使用、修改与作品创作。',
-    notice2: '代码与素材全量开放，可自由用于设计参考、AI 试衣或商业项目。',
-    notice3: '无需署名（可自愿）。图像元数据已删除。请无保使用。',
-    notice4: '这是 AI 生成的虚构服装，并非真实商品照片。',
-    notice5: '本页所有服装图像均由文字生成图像（t2i）方式制作，未使用任何真实商品图片。',
-    notice6: '发布前已与现有品牌做相似性检查，但不保证不侵犯第三方权利。',
-    notice7: '使用时请自行负责确认与判断。因使用本数据产生的问题，本站概不负责。',
-    notice8: '请勿用于表现真实人物或未成年人的用途，以及违背公序良俗的用途。',
     searchPh: '按 ID・关键词搜索　例：denim、白',
     all: '全部',
     random: '随机',
@@ -787,9 +712,6 @@ const I18N = {
     // AI 试穿
     fittingTab: 'AI 试穿',
     themeToDark: '黑色主题', themeToLight: '白色主题',
-    sourceCode: '源代码',
-    inspiration: '灵感来源',
-    footerCredit: '灵感来源与原作者 X 推文：',
     footerCommunity: '社区友链：',
     fitBack: '返回图库', fitTitle: 'AI 试穿',
     fitHint: '上传头像 → 选衣服 → 选模型 → 生成效果',
@@ -877,20 +799,6 @@ const I18N = {
     titleWord: 'PaipianGe',
     titleDb: 'Costumes',
     subtitle: 'Person-free costume images (2:3). Browse by Spring, Summer, Autumn, Winter, Lingerie, Party, Swimwear, and Sexy categories.',
-    tipsTab: 'Usage Tips', noticeTab: 'Notes',
-    tipsTitle: 'Usage Tips', noticeTitle: 'Notes',
-    tips1: 'Load as a reference image into the costume/image-reference features of various AI tools.',
-    tips2: 'Filter with category buttons, or search by ID or costume keywords (e.g. denim, lace, white).',
-    tips3: 'Download the full-size PNG to inspect fine detail.',
-    tips4: 'These are person-free, costume-only images. Add face, body, and background via other references or prompts.',
-    notice1: 'Completely free and open source under MIT License, commercial use allowed.',
-    notice2: 'Code and costume assets are open for design reference, AI try-on, and commercial work.',
-    notice3: 'No credit required (optional). Image metadata removed. Use as-is, no warranty.',
-    notice4: 'Fictional costumes generated by AI, not photos of real products.',
-    notice5: 'All costume images here were made via text-to-image (t2i). No real product images were used.',
-    notice6: 'A similarity check against existing brands was performed before publishing, but this does not guarantee non-infringement of third-party rights.',
-    notice7: 'Please confirm and judge at your own responsibility. We are not liable for any issues arising from use of this data.',
-    notice8: 'Do not use for depicting real people or minors, or for purposes contrary to public order and morals.',
     searchPh: 'Search by ID or keyword  e.g. denim, white',
     all: 'All',
     random: 'Random',
@@ -909,9 +817,6 @@ const I18N = {
     // AI try-on
     fittingTab: 'AI Try-On',
     themeToDark: 'Dark theme', themeToLight: 'Light theme',
-    sourceCode: 'Source code',
-    inspiration: 'Inspiration',
-    footerCredit: 'Inspired by & original X author: ',
     footerCommunity: 'Community: ',
     fitBack: 'Back to gallery', fitTitle: 'AI Try-On',
     fitHint: 'Upload photo → pick garment → choose model → generate',
@@ -1264,22 +1169,6 @@ document.addEventListener('keydown',e=>{
 let tx=null;$('#mimg').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
 $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)step(dx<0?1:-1);tx=null});
 
-// ===== 信息面板（右上角）=====
-(()=>{const nav=document.getElementById('infotabs');if(!nav)return;
-  const tabs=[...nav.querySelectorAll('.itab')];let cur=null;
-  const close=(back)=>{if(!cur)return;const tt=cur;tt.setAttribute('aria-expanded','false');document.getElementById(tt.getAttribute('aria-controls')).hidden=true;cur=null;if(back)tt.focus()};
-  const open=tt=>{if(cur===tt){close(true);return}close(false);cur=tt;tt.setAttribute('aria-expanded','true');const p=document.getElementById(tt.getAttribute('aria-controls'));p.hidden=false;
-    if(innerWidth<=560){const r=tt.getBoundingClientRect();p.style.top=(r.bottom+8)+'px'}else p.style.top='';p.focus({preventScroll:true})};
-  tabs.forEach((tt,i)=>{tt.addEventListener('click',()=>open(tt));tt.addEventListener('keydown',e=>{
-    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const nn=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];nn.focus();if(cur)open(nn)}})});
-  nav.querySelectorAll('.ipclose').forEach(b=>b.addEventListener('click',()=>close(true)));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur){e.stopPropagation();close(true)}},true);
-  let swallow=false;
-  document.addEventListener('pointerdown',e=>{if(cur&&!nav.contains(e.target)){close(false);swallow=true;setTimeout(()=>swallow=false,600)}},true);
-  document.addEventListener('click',e=>{if(swallow){swallow=false;e.preventDefault();e.stopPropagation()}},true);
-  addEventListener('scroll',()=>{if(cur&&innerWidth<=560)close(false)},{passive:true});
-  addEventListener('resize',()=>close(false));
-})();
 
 // ===== AI 试穿 =====
 (function(){
